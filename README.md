@@ -14,7 +14,7 @@ bash <(wget -qO- https://raw.githubusercontent.com/guochan2019/onekey-init/main/
 |------|------|
 | 1/7 | 系统更新 (`apt full-upgrade`) |
 | 2/7 | 安装基础工具（curl, wget, vim, git, htop, btop, nftables, chrony 等） |
-| 3/7 | 配置 nftables 防火墙（放行 SSH/DNS/管理面板端口） |
+| 3/7 | 配置 nftables 防火墙（全放通模式，内网环境不限制流量） |
 | 4/7 | 配置 chrony 时间同步（替代 systemd-timesyncd） |
 | 5/7 | 网络性能调优（BBR + 连接跟踪 + 缓冲区 + TIME_WAIT 优化） |
 | 6/7 | 系统参数调优（swappiness=10、时区 Asia/Shanghai） |
