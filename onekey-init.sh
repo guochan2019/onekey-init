@@ -78,50 +78,49 @@ info "  ✓ chrony 时间同步已启动"
 info "=== 5/7 网络性能调优 ==="
 cat > /etc/sysctl.d/99-network.conf << 'SYSEOF'
 # 网络性能优化
-
-# BBR 拥塞控制
 net.core.default_qdisc = fq
 net.ipv4.tcp_congestion_control = bbr
-
 # 连接跟踪
 net.netfilter.nf_conntrack_max = 1048576
 net.nf_conntrack_max = 1048576
-
 # TIME_WAIT 优化
 net.ipv4.tcp_fin_timeout = 15
 net.ipv4.tcp_tw_reuse = 1
-
 # 缓冲区增大（适合代理场景）
 net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
 net.ipv4.tcp_rmem = 4096 87380 16777216
 net.ipv4.tcp_wmem = 4096 65536 16777216
-
 # 端口范围（代理需要大量连接）
 net.ipv4.ip_local_port_range = 1024 65535
-
 # 其他优化
 net.ipv4.tcp_slow_start_after_idle = 0
 net.ipv4.tcp_notsent_lowat = 16384
 SYSEOF
 
-sysctl -p /etc/sysctl.d/99-network.conf > /dev/null 2>&1
+# 逐条应用 sysctl，跳过 LXC 中不可写的参数
+SYSCFG=/etc/sysctl.d/99-network.conf
+while IFS='= ' read -r key val _; do
+  [ -z "$key" ] || [ "${key:0:1}" = "#" ] && continue
+  sysctl -w "$key=$val" &>/dev/null || warn "  跳过不可写参数: $key"
+done < "$SYSCFG"
 info "  ✓ 网络参数已优化 (BBR + 连接跟踪 + 缓冲区)"
 
 # =================== 6. 系统参数调优 ===================
 info "=== 6/7 系统参数调优 ==="
 
-# swappiness（LXC 中降低 swap 倾向）
 cat > /etc/sysctl.d/99-system.conf << 'SYSEOF'
 vm.swappiness = 10
 vm.vfs_cache_pressure = 50
 SYSEOF
-sysctl -p /etc/sysctl.d/99-system.conf > /dev/null 2>&1
 
-# 设置时区（可选，默认 Asia/Shanghai）
-if [ -z "$TZ" ]; then
-  timedatectl set-timezone Asia/Shanghai 2>/dev/null || true
-fi
+while IFS='= ' read -r key val _; do
+  [ -z "$key" ] || [ "${key:0:1}" = "#" ] && continue
+  sysctl -w "$key=$val" &>/dev/null || warn "  跳过不可写参数: $key"
+done < /etc/sysctl.d/99-system.conf
+
+# 设置时区
+timedatectl set-timezone Asia/Shanghai 2>/dev/null || true
 info "  ✓ 系统参数已优化"
 info "  - swappiness=10, 时区: $(timedatectl show -p Timezone --value 2>/dev/null || echo 'Asia/Shanghai')"
 
@@ -137,8 +136,8 @@ info "========== 初始化完成 =========="
 echo ""
 echo "  $(grep -c processor /proc/cpuinfo) vCPU / $(free -h | awk '/^Mem:/{print $2}') RAM"
 echo "  内核: $(uname -r)"
-echo "  拥塞控制: $(sysctl -n net.ipv4.tcp_congestion_control)"
-echo "  防火墙: nftables（规则: /etc/nftables.conf）"
+echo "  拥塞控制: $(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo '默认')"
+echo "  防火墙: nftables（全放通）"
 echo "  时间同步: $(chronyc tracking 2>/dev/null | grep -c 'Stratum' >/dev/null && echo 'chrony ✓' || echo 'chrony')"
 echo ""
 info "下一步：安装具体服务"
