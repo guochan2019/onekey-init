@@ -98,12 +98,14 @@ net.ipv4.tcp_slow_start_after_idle = 0
 net.ipv4.tcp_notsent_lowat = 16384
 SYSEOF
 
-# 逐条应用 sysctl，跳过 LXC 中不可写的参数
+# 逐条应用 sysctl（set +e 避免 LXC 不可写参数导致失败）
+set +e
 SYSCFG=/etc/sysctl.d/99-network.conf
 while IFS='= ' read -r key val _; do
   [ -z "$key" ] || [ "${key:0:1}" = "#" ] && continue
   sysctl -w "$key=$val" &>/dev/null || warn "  跳过不可写参数: $key"
 done < "$SYSCFG"
+set -e
 info "  ✓ 网络参数已优化 (BBR + 连接跟踪 + 缓冲区)"
 
 # =================== 6. 系统参数调优 ===================
@@ -114,10 +116,12 @@ vm.swappiness = 10
 vm.vfs_cache_pressure = 50
 SYSEOF
 
+set +e
 while IFS='= ' read -r key val _; do
   [ -z "$key" ] || [ "${key:0:1}" = "#" ] && continue
   sysctl -w "$key=$val" &>/dev/null || warn "  跳过不可写参数: $key"
 done < /etc/sysctl.d/99-system.conf
+set -e
 
 # 设置时区
 timedatectl set-timezone Asia/Shanghai 2>/dev/null || true
