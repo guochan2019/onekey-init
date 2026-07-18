@@ -60,6 +60,10 @@ info "  ✓ chrony 时间同步已启动"
 
 # =================== 5. 网络性能调优 ===================
 info "=== 5/7 网络性能调优 ==="
+# 优先 IPv4（避免部分 CDN IPv6 连接失败问题）
+grep -qxF 'precedence ::ffff:0:0/96  100' /etc/gai.conf 2>/dev/null || \
+  echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
+info "  ✓ IPv4 优先已配置 (/etc/gai.conf)"
 cat > /etc/sysctl.d/99-network.conf << 'SYSEOF'
 # 网络性能优化
 net.core.default_qdisc = fq
