@@ -48,33 +48,7 @@ flush ruleset
 
 table inet filter {
   chain input {
-    type filter hook input priority 0; policy drop;
-
-    # 允许已建立的连接和回环
-    ct state established,related accept
-    iif lo accept
-
-    # 允许 ICMP (ping)
-    ip protocol icmp accept
-    ip6 nexthdr icmpv6 accept
-
-    # 允许 SSH
-    tcp dport 22 accept
-
-    # 允许 DNS（给 mosdns 用）
-    tcp dport 53 accept
-    udp dport 53 accept
-
-    # 允许本地服务端口（按需放行）
-    # daed 面板
-    tcp dport 2023 accept
-    # Lucky 后台
-    tcp dport 16601 accept
-    # frpc 管理
-    tcp dport 7400 accept
-
-    # 记录并丢弃其余流量
-    log prefix "nftables-drop: " limit rate 3/minute burst 5 packets drop
+    type filter hook input priority 0; policy accept;
   }
 
   chain forward {
@@ -89,9 +63,7 @@ NFTEOF
 
 systemctl enable nftables
 systemctl start nftables
-info "  ✓ nftables 已配置并启动"
-info "  - 规则文件: /etc/nftables.conf"
-info "  - 已放行: SSH(22) / DNS(53) / daed(2023) / Lucky(16601) / frpc(7400)"
+info "  ✓ nftables 已安装并启动（全放通模式）"
 
 # =================== 4. 配置 chrony 时间同步 ===================
 info "=== 4/7 配置时间同步 ==="

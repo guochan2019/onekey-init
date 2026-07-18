@@ -22,17 +22,9 @@ bash <(wget -qO- https://raw.githubusercontent.com/guochan2019/onekey-init/main/
 
 ## nftables 规则
 
-默认放行端口：
+内网环境全放通模式（INPUT / FORWARD / OUTPUT 全部 ACCEPT），仅确保 nftables 服务已启用，不限制任何流量。
 
-| 端口 | 用途 |
-|:----|:----|
-| TCP 22 | SSH |
-| TCP/UDP 53 | DNS（mosdns） |
-| TCP 2023 | daed 面板 |
-| TCP 16601 | Lucky 后台 |
-| TCP 7400 | frpc 管理 |
-
-INPUT 默认 DROP，仅允许 established/related + loopback + 上述端口。FORWARD 和 OUTPUT 默认 ACCEPT。
+后续如果需要加规则，编辑 `/etc/nftables.conf` 后执行 `nft -f /etc/nftables.conf`。
 
 ## 网络优化
 
