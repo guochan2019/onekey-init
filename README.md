@@ -12,13 +12,18 @@ bash <(wget -qO- https://raw.githubusercontent.com/guochan2019/onekey-init/main/
 
 | 步骤 | 内容 |
 |------|------|
-| 1/7 | 系统更新（`apt full-upgrade`） |
-| 2/7 | 安装基础工具（curl, wget, vim, nano, git, htop, btop, nftables, chrony, jq, cron 等） |
-| 3/7 | 启用 nftables（不写入规则，后续按需配置） |
-| 4/7 | 配置 chrony 时间同步（替代 systemd-timesyncd） |
-| 5/7 | 网络性能调优（BBR + 连接跟踪 + 缓冲区 + TIME_WAIT 优化） |
-| 6/7 | 系统参数调优（swappiness=10、时区 Asia/Shanghai） |
-| 7/7 | 清理（apt autoremove、autoclean） |
+| 1/8 | 替换 APT 源为清华镜像（备份原文件，支持 trixie/updates/backports/security） |
+| 2/8 | 系统更新（`apt full-upgrade`） |
+| 3/8 | 安装基础工具（curl, wget, vim, nano, git, htop, btop, nftables, chrony, jq, cron 等） |
+| 4/8 | 启用 nftables（不写入规则，后续按需配置） |
+| 5/8 | 配置 chrony 时间同步（替代 systemd-timesyncd） |
+| 6/8 | 网络性能调优（BBR + 连接跟踪 + 缓冲区 + TIME_WAIT 优化） |
+| 7/8 | 系统参数调优（swappiness=10、时区 Asia/Shanghai） |
+| 8/8 | 清理（apt autoremove、autoclean） |
+
+## 换源
+
+默认替换为清华镜像源，备份文件保存在 `/etc/apt/sources.list.d/debian.sources.bak`。
 
 ## nftables
 
