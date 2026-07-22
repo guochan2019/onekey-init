@@ -2,7 +2,7 @@
 # ============================================================
 # onekey-init — Debian LXC 系统初始化脚本
 # 适用环境: Debian 13 (fresh LXC)
-# 功能: 系统更新 + 基础工具 + nftables + 网络调优
+# 功能: 换源 + 系统更新 + 基础工具 + nftables + 网络调优
 # ============================================================
 set -e
 
@@ -27,14 +27,50 @@ echo "  Debian LXC 系统初始化"
 echo "========================================"
 echo ""
 
-# =================== 1. 系统更新 ===================
-info "=== 1/7 系统更新 ==="
+# =================== 1. 替换国内源 ===================
+SOURCES_FILE="/etc/apt/sources.list.d/debian.sources"
+if [ -f "$SOURCES_FILE" ]; then
+  info "=== 1/8 替换 APT 源为清华镜像 ==="
+  cp "$SOURCES_FILE" "${SOURCES_FILE}.bak"
+  info "  ✓ 已备份原文件: ${SOURCES_FILE}.bak"
+  cat > "$SOURCES_FILE" << 'SOURCESEOF'
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/debian
+Suites: trixie
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/debian
+Suites: trixie-updates
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/debian
+Suites: trixie-backports
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/debian-security
+Suites: trixie-security
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+SOURCESEOF
+  info "  ✓ APT 源已替换为清华镜像"
+else
+  warn "  ⚠ 未找到 ${SOURCES_FILE}，跳过换源"
+fi
+
+# =================== 2. 系统更新 ===================
+info "=== 2/8 系统更新 ==="
 apt update -qq
 apt full-upgrade -y -qq
 info "  ✓ 系统已更新"
 
-# =================== 2. 安装基础工具 ===================
-info "=== 2/7 安装基础工具 ==="
+# =================== 3. 安装基础工具 ===================
+info "=== 3/8 安装基础工具 ==="
 apt install -y -qq \
   curl wget vim nano git \
   htop iftop btop \
@@ -43,14 +79,14 @@ apt install -y -qq \
   unzip cron chrony
 info "  ✓ 基础工具已安装"
 
-# =================== 3. 配置 nftables ===================
-info "=== 3/7 启用 nftables ==="
+# =================== 4. 配置 nftables ===================
+info "=== 4/8 启用 nftables ==="
 systemctl enable nftables
 systemctl start nftables
 info "  ✓ nftables 已启用（未写入规则，按需添加）"
 
-# =================== 4. 配置 chrony 时间同步 ===================
-info "=== 4/7 配置时间同步 ==="
+# =================== 5. 配置 chrony 时间同步 ===================
+info "=== 5/8 配置时间同步 ==="
 systemctl stop systemd-timesyncd 2>/dev/null || true
 systemctl disable systemd-timesyncd 2>/dev/null || true
 systemctl enable --now chrony
@@ -58,8 +94,8 @@ sleep 1
 chronyc tracking 2>/dev/null | grep -E 'Stratum|System time' || true
 info "  ✓ chrony 时间同步已启动"
 
-# =================== 5. 网络性能调优 ===================
-info "=== 5/7 网络性能调优 ==="
+# =================== 6. 网络性能调优 ===================
+info "=== 6/8 网络性能调优 ==="
 # 优先 IPv4（避免部分 CDN IPv6 连接失败问题）
 grep -qxF 'precedence ::ffff:0:0/96  100' /etc/gai.conf 2>/dev/null || \
   echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
@@ -96,8 +132,8 @@ done < "$SYSCFG"
 set -e
 info "  ✓ 网络参数已优化 (BBR + 连接跟踪 + 缓冲区)"
 
-# =================== 6. 系统参数调优 ===================
-info "=== 6/7 系统参数调优 ==="
+# =================== 7. 系统参数调优 ===================
+info "=== 7/8 系统参数调优 ==="
 
 cat > /etc/sysctl.d/99-system.conf << 'SYSEOF'
 vm.swappiness = 10
@@ -116,8 +152,8 @@ timedatectl set-timezone Asia/Shanghai 2>/dev/null || true
 info "  ✓ 系统参数已优化"
 info "  - swappiness=10, 时区: $(timedatectl show -p Timezone --value 2>/dev/null || echo 'Asia/Shanghai')"
 
-# =================== 7. 清理 ===================
-info "=== 7/7 清理 ==="
+# =================== 8. 清理 ===================
+info "=== 8/8 清理 ==="
 apt autoremove --purge -y -qq 2>/dev/null || true
 apt autoclean -qq 2>/dev/null || true
 info "  ✓ 清理完成"
